@@ -1,0 +1,7 @@
+## Interface: 110000
+## Title: Item Splitter
+## Version: 11.0.0
+## Author: outlying
+## IconTexture: Interface\Icons\misc_torgast_theboxofmanythings
+
+Core.lua
