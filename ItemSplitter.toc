@@ -4,4 +4,6 @@
 ## Author: outlying
 ## IconTexture: Interface\Icons\misc_torgast_theboxofmanythings
 
+Utils.lua
+UI.lua
 Core.lua

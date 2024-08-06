@@ -39,6 +39,9 @@ luac.out
 *.x86_64
 *.hex
 
+# Visual Studio Code
+*.vscode/
+
 # Visual Studio
 *.vs
 
