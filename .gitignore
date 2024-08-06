@@ -45,3 +45,4 @@ luac.out
 # Addon Studio 2022
 *.wowproj
 *.wowsln
+Logs/
