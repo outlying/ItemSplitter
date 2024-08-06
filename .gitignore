@@ -41,3 +41,7 @@ luac.out
 
 # Visual Studio
 *.vs
+
+# Addon Studio 2022
+*.wowproj
+*.wowsln
