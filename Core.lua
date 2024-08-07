@@ -11,8 +11,61 @@ local PickupContainerItem = C_Container and C_Container.PickupContainerItem or P
 
 local f = CreateFrame("Frame") -- Main event frame
 
+local ContainerScope = {}
+ContainerScope.PERSONAL = { 
+    Enum.BagIndex.Backpack,
+    Enum.BagIndex.Bag_1,
+    Enum.BagIndex.Bag_2,
+    Enum.BagIndex.Bag_3,
+    Enum.BagIndex.Bag_4
+ }
+
+ ContainerScope.PERSONAL_REGENTS = {
+    Enum.BagIndex.ReagentBag
+ }
+
+ ContainerScope.PERSONAL_WITH_REGENTS = ns.mergeTables(ContainerScope.PERSONAL, ContainerScope.PERSONAL_REGENTS)
+
+ ContainerScope.BANK = {
+    Enum.BagIndex.Bank,
+    Enum.BagIndex.BankBag_1,
+    Enum.BagIndex.BankBag_2,
+    Enum.BagIndex.BankBag_3,
+    Enum.BagIndex.BankBag_4,
+    Enum.BagIndex.BankBag_5,
+    Enum.BagIndex.BankBag_6,
+    Enum.BagIndex.BankBag_7
+ }
+
+ ContainerScope.BANK_REGENTS = {
+    Enum.BagIndex.Reagentbank
+ }
+
+ ContainerScope.BANK_WITH_REGENTS = ns.mergeTables(ContainerScope.BANK, ContainerScope.BANK_REGENTS)
+
 local dialog = nil
-local autoSplittingSession = nil
+
+--[[
+    Hide, unparent and dereference current instance of dialog
+]]
+
+local function ClearDialog()
+    if dialog then -- Remove old dialog, we start fresh
+        dialog:Hide()
+        dialog:SetParent(nil)
+    end
+    dialog = nil
+end
+
+local function DisableDialog()
+    if dialog then
+        dialog.autoSplitButton:Disable()
+        dialog.splitButton:Disable()
+        dialog.editBox:Disable()
+        dialog.decrementButton:Disable()
+        dialog.incrementButton:Disable()
+    end
+end
 
 --[[
     Finds an empty slot in the player's bags.
@@ -23,15 +76,27 @@ local autoSplittingSession = nil
     @return slot (number) - The index of the empty slot within the bag, or nil if no empty slot is found. 
 ]]
 
-local function FindEmptySlot()
+local function FindEmptySlot(exclude, sourceBagIndex, sourceSlotIndex)
+
+    local function isExcluded(bag, slot)
+        for _, pair in ipairs(exclude) do
+            if pair[1] == bag and pair[2] == slot then
+                return true
+            end
+        end
+        return false
+    end
 
     -- TODO it should allow to support other containers
 
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
-            local itemInfo = GetContainerItemInfo(bag, slot)
-            if not itemInfo then
-                return bag, slot
+            -- Check if the current bag-slot pair is excluded
+            if not isExcluded(bag, slot) then
+                local itemInfo = GetContainerItemInfo(bag, slot)
+                if not itemInfo then
+                    return bag, slot
+                end
             end
         end
     end
@@ -51,6 +116,8 @@ local function AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
 
     ClearCursor() -- Drop any items held by cursor
 
+    local excluded = {} -- We are keeping local exclude list to not duplicate destination locations
+
     while currentStackSize > targetStacksSize do
 
         while true do
@@ -62,16 +129,20 @@ local function AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
             end
         end
 
-        local destBag, destSlot = FindEmptySlot()
+        local destBag, destSlot = FindEmptySlot(excluded)
+        table.insert(excluded, {destBag, destSlot})
+
         if destBag and destSlot then
             SplitContainerItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
             PickupContainerItem(destBag, destSlot)
             currentStackSize = currentStackSize - targetStacksSize
         else
-            print("No empty slot found for split")
+            print("No more empty slots found for automatic split")
             break
         end
     end
+
+    ClearDialog()
 end
 
 --[[
@@ -88,21 +159,11 @@ local function StartAutomaticSplitSession(sourceBagIndex, sourceSlotIndex, targe
     end)
 end
 
---[[
-    Hide, unparent and dereference current instance of dialog
-]]
-
-local function ClearDialog()
-    if dialog then -- Remove old dialog, we start fresh
-        dialog:Hide()
-        dialog:SetParent(nil)
-    end
-    dialog = nil
-end
-
 -- Overrides standard function for split dialog
 
 local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
+    print(Enum.BagIndex.Backpack)
+
     ClearDialog()
     dialog = CreateItemSplitterDialog(maxStack)
 
@@ -118,6 +179,7 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     end)
 
     dialog.autoSplitButton:SetScript("OnClick", function ()
+        DisableDialog()
         StartAutomaticSplitSession(bagIndex, slotIndex, dialog:GetValue())
     end)
 end
@@ -128,20 +190,22 @@ local function Init()
 	StackSplitFrame.OpenStackSplitFrame = OpenFrame
 end
 
--- Event functions
-
-function f:OnEvent(event, ...)
-	self[event](self, event, ...)
-end
+-- Frame update
 
 function f:OnUpdate(elapsed)
     if coroutineAutomaticSplit then
         local status, res = coroutine.resume(coroutineAutomaticSplit)
         if not status then
-            print("Coroutine finished or error occurred:", res)
+            ns.debug("Coroutine finished or error occurred:" .. res)
             coroutineAutomaticSplit = nil  -- Clear the coroutine once it's done or if an error occurred
         end
     end
+end
+
+-- Event functions
+
+function f:OnEvent(event, ...)
+	self[event](self, event, ...)
 end
 
 function f:ADDON_LOADED(event, loadedAddonName)
@@ -150,8 +214,13 @@ function f:ADDON_LOADED(event, loadedAddonName)
 	end
 end
 
+function f:PLAYER_INTERACTION_MANAGER_FRAME_HIDE(event, type)
+    -- Keep it as it might be required for build bank operations
+end
+
 -- In-game event register
 
 f:RegisterEvent("ADDON_LOADED")
+f:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 f:SetScript("OnEvent", f.OnEvent)
 f:SetScript("OnUpdate", f.OnUpdate)

@@ -63,6 +63,8 @@ function CreateItemSplitterDialog(
         decrementValue()
     end)
 
+    frame.decrementButton = decrementButton
+
     -- Increment button
     local incrementButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     incrementButton:SetSize(20, 20)
@@ -71,6 +73,8 @@ function CreateItemSplitterDialog(
     incrementButton:SetScript("OnClick", function()
         incrementValue()
     end)
+
+    frame.incrementButton = incrementButton
 
     -- Split button
     local splitButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
