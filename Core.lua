@@ -162,8 +162,6 @@ end
 -- Overrides standard function for split dialog
 
 local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
-    print(Enum.BagIndex.Backpack)
-
     ClearDialog()
     dialog = CreateItemSplitterDialog(maxStack)
 
