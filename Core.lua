@@ -7,21 +7,6 @@ local GetContainerNumSlots = C_Container and C_Container.GetContainerNumSlots or
 local SplitContainerItem = C_Container and C_Container.SplitContainerItem or SplitContainerItem
 local PickupContainerItem = C_Container and C_Container.PickupContainerItem or PickupContainerItem
 
---[[
-    AutoSplittingSession representation of ongoing stack splitting process
-]]
-
-AutoSplittingSession = {}
-AutoSplittingSession.__index = AutoSplittingSession
-
-function AutoSplittingSession:new(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-    local instance = setmetatable({}, AutoSplittingSession)
-    instance.sourceBagIndex = sourceBagIndex
-    instance.sourceSlotIndex = sourceSlotIndex
-    instance.targetStacksSize = targetStacksSize
-    return instance
-end
-
 -- Addon variables
 
 local f = CreateFrame("Frame") -- Main event frame
@@ -60,68 +45,48 @@ end
     @return done (bool) - true if all is split, false in case of potential more items to split
 ]]
 
-local function AutomaticSplit(bagIndex, slotIndex, targetStacksSize)
-    local itemInfo = GetContainerItemInfo(bagIndex, slotIndex)
+local function AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
+    local itemInfo = GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
     local currentStackSize = itemInfo.stackCount
 
-    local function SplitItem(sourceBag, sourceSlot, size)
+    ClearCursor() -- Drop any items held by cursor
+
+    while currentStackSize > targetStacksSize do
+
+        while true do
+            local sourceItemInfo = GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+            if sourceItemInfo.isLocked then
+                coroutine.yield()
+            else
+                break
+            end
+        end
+
         local destBag, destSlot = FindEmptySlot()
         if destBag and destSlot then
-            SplitContainerItem(sourceBag, sourceSlot, size)
+            SplitContainerItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
             PickupContainerItem(destBag, destSlot)
+            currentStackSize = currentStackSize - targetStacksSize
         else
             print("No empty slot found for split")
-            return false
+            break
         end
-        return true
     end
-
-    if currentStackSize > targetStacksSize then
-        SplitItem(bagIndex, slotIndex, targetStacksSize)
-        return false
-    end
-
-    return true
 end
 
 --[[
     We start automatic splitting of stack
 ]]
 
+local coroutineAutomaticSplit = nil
+
 local function StartAutomaticSplitSession(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-    f:RegisterEvent("ITEM_LOCK_CHANGED")
     -- TODO guild bank splitting is managed by other event: GUILDBANK_ITEM_LOCK_CHANGED
 
-    autoSplittingSession = AutoSplittingSession:new(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-    
-    AutomaticSplit(
-        autoSplittingSession.sourceBagIndex, 
-        autoSplittingSession.sourceSlotIndex, 
-        autoSplittingSession.targetStacksSize)
+    coroutineAutomaticSplit = coroutine.create(function ()
+        AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
+    end)
 end
-
---[[
-    After item lock is changed we try to continue and split item stack further
-]]
-
-local function ContinueAutomaticSplitSession()
-    if not autoSplittingSession then
-        print("Error, no automatic splitting session in progress")
-        return
-    end
-
-    AutomaticSplit(autoSplittingSession.sourceBagIndex, autoSplittingSession.sourceSlotIndex, autoSplittingSession.targetStacksSize)
-
-    local autoSplitResult = AutomaticSplit(
-        autoSplittingSession.sourceBagIndex, 
-        autoSplittingSession.sourceSlotIndex, 
-        autoSplittingSession.targetStacksSize)
-
-    if autoSplitResult then
-        autoSplittingSession = nil
-        f:UnregisterEvent("ITEM_LOCK_CHANGED")
-    end
-end 
 
 --[[
     Hide, unparent and dereference current instance of dialog
@@ -169,22 +134,24 @@ function f:OnEvent(event, ...)
 	self[event](self, event, ...)
 end
 
+function f:OnUpdate(elapsed)
+    if coroutineAutomaticSplit then
+        local status, res = coroutine.resume(coroutineAutomaticSplit)
+        if not status then
+            print("Coroutine finished or error occurred:", res)
+            coroutineAutomaticSplit = nil  -- Clear the coroutine once it's done or if an error occurred
+        end
+    end
+end
+
 function f:ADDON_LOADED(event, loadedAddonName)
 	if addonName == loadedAddonName then
 		Init()
 	end
 end
 
-function f:ITEM_LOCK_CHANGED(event, bagOfUpdatedItem, slotOfUpdatedItem)
-    if bagOfUpdatedItem and slotOfUpdatedItem then
-        local itemInfo = GetContainerItemInfo(bagOfUpdatedItem, slotOfUpdatedItem)
-        if itemInfo and not itemInfo.isLocked then
-            ContinueAutomaticSplitSession()
-        end
-    end
-end
-
 -- In-game event register
 
 f:RegisterEvent("ADDON_LOADED")
 f:SetScript("OnEvent", f.OnEvent)
+f:SetScript("OnUpdate", f.OnUpdate)
