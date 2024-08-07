@@ -1,8 +1,7 @@
 local addonName, ns = ...
 
 function CreateItemSplitterDialog(
-    maximumValue,
-    onValueChanged
+    maximumValue
 )
 
     -- Create the main frame
@@ -32,9 +31,6 @@ function CreateItemSplitterDialog(
     editBox:SetNumber(1)
     editBox:SetJustifyH("RIGHT")
     editBox:SetTextInsets(0, 5, 0, 0)
-    editBox:SetScript("OnTextChanged", function(self)
-        onValueChanged(editBox:GetNumber())
-    end)
 
     local incrementValue = function ()
         local currentNumber = editBox:GetNumber()
@@ -83,9 +79,7 @@ function CreateItemSplitterDialog(
     splitButton:SetText("Split")
 
     splitButton:SetScript("OnClick", function()
-        local stackSize = editBox:GetNumber()
-        print("Splitting stack into " .. stackSize .. " items.")
-        -- Add your splitting logic here
+        print("Error, split button script, this should be overridden.")
     end)
 
     frame.splitButton = splitButton
@@ -97,10 +91,14 @@ function CreateItemSplitterDialog(
     autoSplitButton:SetText("Auto Split")
 
     autoSplitButton:SetScript("OnClick", function()
-        print("Error, this button should be overriden if visible")
+        print("Error, auto split button script, this should be overridden.")
     end)
 
     frame.autoSplitButton = autoSplitButton
+
+    function frame:GetValue()
+        return frame.editBox:GetNumber()
+    end
 
     return frame
 end
