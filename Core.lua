@@ -44,6 +44,7 @@ ContainerScope.PERSONAL = {
  ContainerScope.BANK_WITH_REGENTS = ns.mergeTables(ContainerScope.BANK, ContainerScope.BANK_REGENTS)
 
 local dialog = nil
+local contextGuildBank = false
 
 --[[
     Hide, unparent and dereference current instance of dialog
@@ -164,7 +165,6 @@ end
 local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     ClearDialog()
     dialog = CreateItemSplitterDialog(maxStack)
-
     dialog:ClearAllPoints()
     dialog:SetPoint(anchor, parent, anchorTo, 0, 0)
 
@@ -212,13 +212,23 @@ function f:ADDON_LOADED(event, loadedAddonName)
 	end
 end
 
+function f:PLAYER_INTERACTION_MANAGER_FRAME_SHOW(event, type)
+    if type == 10 then
+        contextGuildBank = true
+    end
+end
+
 function f:PLAYER_INTERACTION_MANAGER_FRAME_HIDE(event, type)
-    -- Keep it as it might be required for build bank operations
+    if type == 10 then
+        contextGuildBank = false
+        ClearDialog() -- for guild bank it is possible to close dialog this way
+    end
 end
 
 -- In-game event register
 
 f:RegisterEvent("ADDON_LOADED")
+f:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
 f:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 f:SetScript("OnEvent", f.OnEvent)
 f:SetScript("OnUpdate", f.OnUpdate)
