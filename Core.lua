@@ -112,7 +112,7 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
     -- TODO it should allow to support other containers
 
     local startBag = 0
-    local endBag = 0
+    local endBag = 4
 
     if isGuildBank then
         startBag = sourceBagIndex
