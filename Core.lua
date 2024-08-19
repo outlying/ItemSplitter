@@ -69,15 +69,36 @@ local function DisableDialog()
 end
 
 --[[
+    Get item information
+]]
+local function CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
+    if isGuildBank then
+        local texture, itemCount, locked, isFiltered, quality = GetGuildBankItemInfo(sourceBagIndex, sourceSlotIndex)
+        if not texture then
+            return nil
+        end
+        local itemInfo = {} -- We try to replcate of a return structure of GetContainerItemInfo
+        itemInfo.stackCount = itemCount
+        itemInfo.isLocked = locked
+        return itemInfo
+    else
+        return GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+    end
+end
+
+--[[
     Finds an empty slot in the player's bags.
 
     Iterates through all the bags (from bag 0 to bag 4) and their slots to find the first empty slot.
 
     @return bag (number) - The index of the bag containing the empty slot, or nil if no empty slot is found.
     @return slot (number) - The index of the empty slot within the bag, or nil if no empty slot is found. 
+
+    TODO since we look for slipts in diffetent types of spaces that are not available everywhere we need
+    a second argument to be replaced with something better
 ]]
 
-local function FindEmptySlot(exclude, sourceBagIndex, sourceSlotIndex)
+local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotIndex)
 
     local function isExcluded(bag, slot)
         for _, pair in ipairs(exclude) do
@@ -90,11 +111,25 @@ local function FindEmptySlot(exclude, sourceBagIndex, sourceSlotIndex)
 
     -- TODO it should allow to support other containers
 
-    for bag = 0, 4 do
-        for slot = 1, GetContainerNumSlots(bag) do
+    local startBag = 0
+
+    if isGuildBank then
+        startBag = 1
+    end
+
+    for bag = startBag, 4 do
+        local maxSlots = nil
+        
+        if isGuildBank then
+            maxSlots = 98 -- For bank tabs is always the same -- TODO const ?
+        else
+            maxSlots = GetContainerNumSlots(bag)
+        end
+
+        for slot = 1, maxSlots do
             -- Check if the current bag-slot pair is excluded
             if not isExcluded(bag, slot) then
-                local itemInfo = GetContainerItemInfo(bag, slot)
+                local itemInfo = CollectItemInfo(isGuildBank, bag, slot)
                 if not itemInfo then
                     return bag, slot
                 end
@@ -111,18 +146,31 @@ end
     @return done (bool) - true if all is split, false in case of potential more items to split
 ]]
 
-local function AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-    local itemInfo = GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+    local itemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
+
+    if not itemInfo then
+        print("Unable to get item info for given input")
+        return
+    end
+
     local currentStackSize = itemInfo.stackCount
-
     ClearCursor() -- Drop any items held by cursor
-
     local excluded = {} -- We are keeping local exclude list to not duplicate destination locations
+    local transferBag, transferSlot = nil, nil
+
+    if isGuildBank then
+        transferBag, transferSlot = FindEmptySlot(excluded, false) -- False we look in players bags
+        if not transferBag or not transferSlot then
+            print("At least one empty slot in your bags is required to do that")
+            return
+        end
+    end
 
     while currentStackSize > targetStacksSize do
 
         while true do
-            local sourceItemInfo = GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+            local sourceItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
             if sourceItemInfo.isLocked then
                 coroutine.yield()
             else
@@ -130,12 +178,38 @@ local function AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
             end
         end
 
-        local destBag, destSlot = FindEmptySlot(excluded)
-        table.insert(excluded, {destBag, destSlot})
+        local destBag, destSlot = FindEmptySlot(excluded, isGuildBank)
 
         if destBag and destSlot then
-            SplitContainerItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-            PickupContainerItem(destBag, destSlot)
+            table.insert(excluded, {destBag, destSlot})
+
+            -- This is special guild bank handling
+            if isGuildBank and transferBag and transferSlot then
+                
+                SplitGuildBankItem(sourceBagIndex, sourceBagIndex, targetStacksSize)
+                PickupContainerItem(transferBag, transferSlot)
+
+                while true do
+                    local transferItemInfo = CollectItemInfo(false, transferBag, transferSlot)
+                    if transferItemInfo.isLocked then
+                        coroutine.yield()
+                    else
+                        break
+                    end
+                end
+                
+                C_Timer.After(0.1, function()
+                    PickupContainerItem(transferBag, transferSlot)
+                    C_Timer.After(0.1, function()
+                        PickupGuildBankItem(destBag, destSlot)
+                    end)
+                end)
+
+            -- Other bags / banks handling
+            else
+                SplitContainerItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
+                PickupContainerItem(destBag, destSlot)
+            end
             currentStackSize = currentStackSize - targetStacksSize
         else
             print("No more empty slots found for automatic split")
@@ -152,24 +226,42 @@ end
 
 local coroutineAutomaticSplit = nil
 
-local function StartAutomaticSplitSession(sourceBagIndex, sourceSlotIndex, targetStacksSize)
-    -- TODO guild bank splitting is managed by other event: GUILDBANK_ITEM_LOCK_CHANGED
-
+local function StartAutomaticSplitSession(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
     coroutineAutomaticSplit = coroutine.create(function ()
-        AutomaticSplit(sourceBagIndex, sourceSlotIndex, targetStacksSize)
+        AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
     end)
+end
+
+--[[
+    Detector function to figure out clicked bag-slot combination based on parent UI element
+    
+    The guild bank is a bit tricky since tabs IDs are overlapping with usual bag numeration
+    so tab 1 in bank is 1, the same as bag 1 player is carrying.
+]]
+
+local function SourceLocation(parent)
+    local isGuildBank = false
+    local bagIndex = parent:GetParent():GetID()
+    local slotIndex = parent:GetID()
+
+    if parent:GetParent():GetParent():GetName() == "GuildBankFrame" then
+        isGuildBank = true
+        bagIndex = GetCurrentGuildBankTab()
+    end
+
+    return isGuildBank, bagIndex, slotIndex
 end
 
 -- Overrides standard function for split dialog
 
 local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
+
     ClearDialog()
     dialog = CreateItemSplitterDialog(maxStack)
     dialog:ClearAllPoints()
     dialog:SetPoint(anchor, parent, anchorTo, 0, 0)
 
-    local bagIndex = parent:GetParent():GetID()
-    local slotIndex = parent:GetID()
+    local isGuildBank, bagIndex, slotIndex = SourceLocation(parent)
 
     dialog.splitButton:SetScript("OnClick", function()
         parent.SplitStack(parent, dialog:GetValue()) -- original behaviour
@@ -178,7 +270,7 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
 
     dialog.autoSplitButton:SetScript("OnClick", function ()
         DisableDialog()
-        StartAutomaticSplitSession(bagIndex, slotIndex, dialog:GetValue())
+        StartAutomaticSplitSession(isGuildBank, bagIndex, slotIndex, dialog:GetValue())
     end)
 end
 
@@ -197,6 +289,12 @@ function f:OnUpdate(elapsed)
             ns.debug("Coroutine finished or error occurred:" .. res)
             coroutineAutomaticSplit = nil  -- Clear the coroutine once it's done or if an error occurred
         end
+    end
+
+    if coroutineGuildBankSplit then
+        C_Timer.After(3, function ()
+            print(coroutine.status(coroutineGuildBankSplit))
+        end)
     end
 end
 
