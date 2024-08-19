@@ -34,3 +34,16 @@ function ns.mergeTables(t1, t2)
     end
     return result
 end
+
+function ns.RunWithDelay(delay, functions)
+    local function runNext(index)
+        if index <= #functions then
+            C_Timer.After(delay, function()
+                functions[index]()
+                runNext(index + 1)
+            end)
+        end
+    end
+
+    runNext(1)
+end
