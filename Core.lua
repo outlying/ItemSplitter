@@ -219,7 +219,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
                     coroutine.yield()
                 end
                 safe = safe + 1
-                if safe >= 100 then
+                if safe >= 200 then
                     ns.Log.error("Waiting for source item stack change failed")
                     return
                 end
@@ -229,8 +229,6 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             break
         end
     end
-
-    ClearDialog()
 end
 
 --[[
@@ -242,6 +240,7 @@ local coroutineAutomaticSplit = nil
 local function StartAutomaticSplitSession(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
     coroutineAutomaticSplit = coroutine.create(function ()
         AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+        ClearDialog()
     end)
 end
 
