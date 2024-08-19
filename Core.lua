@@ -171,12 +171,18 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
 
     while currentStackSize > targetStacksSize do
 
+        local safe = 0
         while true do
             local sourceItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
             if sourceItemInfo.isLocked then
                 coroutine.yield()
             else
                 break
+            end
+            safe = safe + 1
+            if safe >= 100 then
+                ns.Log.error("Waiting for source item lock removal failed")
+                return
             end
         end
 
@@ -189,8 +195,6 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             if isGuildBank and transferBag and transferSlot then
                 
                 SplitGuildBankItem(sourceBagIndex, sourceBagIndex, targetStacksSize)
-                PickupContainerItem(transferBag, transferSlot)
-                PickupContainerItem(transferBag, transferSlot)
                 PickupGuildBankItem(destBag, destSlot)
 
             -- Other bags / banks handling
@@ -200,6 +204,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             end
 
             -- Wait on an actual change
+            safe = 0
             while true do
                 local inprogressItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
                 if inprogressItemInfo then
@@ -212,6 +217,11 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
                     end
                 else
                     coroutine.yield()
+                end
+                safe = safe + 1
+                if safe >= 100 then
+                    ns.Log.error("Waiting for source item stack change failed")
+                    return
                 end
             end
         else
