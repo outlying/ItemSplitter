@@ -189,69 +189,31 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             if isGuildBank and transferBag and transferSlot then
                 
                 SplitGuildBankItem(sourceBagIndex, sourceBagIndex, targetStacksSize)
-                
                 PickupContainerItem(transferBag, transferSlot)
-
-                local i = 0
-                while true do
-                    local transferItemInfo = CollectItemInfo(false, transferBag, transferSlot)
-                    if transferItemInfo and not transferItemInfo.isLocked then
-                        break
-                    else
-                        coroutine.yield()
-                    end
-                    i = i + 1
-                    if i > 100 then
-                        ns.Log.error("Transfer put down failed")
-                        return
-                    end
-                end
-
-                C_Timer.After(0.2, function()
-                    PickupContainerItem(transferBag, transferSlot)
-                end)
-
-                i = 0
-                while true do
-                    local transferItemInfo = CollectItemInfo(false, transferBag, transferSlot)
-                    if transferItemInfo and transferItemInfo.isLocked then
-                        break
-                    else
-                        coroutine.yield()
-                    end
-                    i = i + 1
-                    if i > 100 then
-                        ns.Log.error("Transfer pickup failed")
-                        return
-                    end
-                end
-
-                C_Timer.After(0.5, function()
-                    PickupGuildBankItem(destBag, destSlot)
-                end)
-
-                i = 0
-                while true do
-                    local destItemInfo = CollectItemInfo(true, destBag, destSlot)
-                    if destItemInfo then
-                        break
-                    else
-                        coroutine.yield()
-                    end
-                    i = i + 1
-                    if i > 100 then
-                        ns.Log.error("Destination failed")
-                        return
-                    end
-                end
+                PickupContainerItem(transferBag, transferSlot)
+                PickupGuildBankItem(destBag, destSlot)
 
             -- Other bags / banks handling
             else
                 SplitContainerItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
                 PickupContainerItem(destBag, destSlot)
             end
-            currentStackSize = currentStackSize - targetStacksSize
-            ns.Log.debug("Current stack size: " .. currentStackSize)
+
+            -- Wait on an actual change
+            while true do
+                local inprogressItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
+                if inprogressItemInfo then
+                    if inprogressItemInfo.stackCount == currentStackSize - targetStacksSize then
+                        currentStackSize = currentStackSize - targetStacksSize
+                        ns.Log.debug("Current stack size: " .. currentStackSize)
+                        break
+                    else
+                        coroutine.yield()
+                    end
+                else
+                    coroutine.yield()
+                end
+            end
         else
             ns.Log.warn("No more empty slots found for automatic split")
             break
