@@ -11,11 +11,11 @@ local LOG_LEVELS = {
 -- Set the current log level (only logs at or above this level will be printed)
 
 --@debug@
-local CURRENT_LOG_LEVEL = LOG_LEVELS.WARN
+local CURRENT_LOG_LEVEL = LOG_LEVELS.DEBUG
 --@end-debug@
 
 --[===[@non-debug@
-local CURRENT_LOG_LEVEL = LOG_LEVELS.DEBUG
+local CURRENT_LOG_LEVEL = LOG_LEVELS.WARN
 --@end-non-debug@]===]
 
 -- Create the Log table in the ns (namespace) table
