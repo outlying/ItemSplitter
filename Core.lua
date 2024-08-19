@@ -112,12 +112,14 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
     -- TODO it should allow to support other containers
 
     local startBag = 0
+    local endBag = 0
 
     if isGuildBank then
-        startBag = 1
+        startBag = sourceBagIndex
+        endBag = sourceBagIndex
     end
 
-    for bag = startBag, 4 do
+    for bag = startBag, endBag do
         local maxSlots = nil
         
         if isGuildBank then
@@ -150,7 +152,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
     local itemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
 
     if not itemInfo then
-        print("Unable to get item info for given input")
+        ns.Log.debug("Unable to get item info for given input")
         return
     end
 
@@ -160,9 +162,9 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
     local transferBag, transferSlot = nil, nil
 
     if isGuildBank then
-        transferBag, transferSlot = FindEmptySlot(excluded, false) -- False we look in players bags
+        transferBag, transferSlot = FindEmptySlot(excluded, false, sourceBagIndex, sourceSlotIndex) -- False we look in players bags
         if not transferBag or not transferSlot then
-            print("At least one empty slot in your bags is required to do that")
+            ns.Log.info("At least one empty slot in your bags is required to do that")
             return
         end
     end
@@ -178,7 +180,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             end
         end
 
-        local destBag, destSlot = FindEmptySlot(excluded, isGuildBank)
+        local destBag, destSlot = FindEmptySlot(excluded, isGuildBank, sourceBagIndex, sourceSlotIndex)
 
         if destBag and destSlot then
             table.insert(excluded, {destBag, destSlot})
@@ -198,9 +200,9 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
                     end
                 end
                 
-                C_Timer.After(0.1, function()
+                C_Timer.After(0.2, function()
                     PickupContainerItem(transferBag, transferSlot)
-                    C_Timer.After(0.1, function()
+                    C_Timer.After(0.2, function()
                         PickupGuildBankItem(destBag, destSlot)
                     end)
                 end)
@@ -212,7 +214,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             end
             currentStackSize = currentStackSize - targetStacksSize
         else
-            print("No more empty slots found for automatic split")
+            ns.Log.warn("No more empty slots found for automatic split")
             break
         end
     end
@@ -286,15 +288,9 @@ function f:OnUpdate(elapsed)
     if coroutineAutomaticSplit then
         local status, res = coroutine.resume(coroutineAutomaticSplit)
         if not status then
-            ns.debug("Coroutine finished or error occurred:" .. res)
+            ns.Log.warn("Coroutine finished or error occurred:" .. res)
             coroutineAutomaticSplit = nil  -- Clear the coroutine once it's done or if an error occurred
         end
-    end
-
-    if coroutineGuildBankSplit then
-        C_Timer.After(3, function ()
-            print(coroutine.status(coroutineGuildBankSplit))
-        end)
     end
 end
 
