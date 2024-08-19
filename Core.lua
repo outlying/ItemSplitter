@@ -288,7 +288,7 @@ function f:OnUpdate(elapsed)
     if coroutineAutomaticSplit then
         local status, res = coroutine.resume(coroutineAutomaticSplit)
         if not status then
-            ns.Log.warn("Coroutine finished or error occurred:" .. res)
+            ns.Log.debug("Coroutine finished or error occurred:" .. res)
             coroutineAutomaticSplit = nil  -- Clear the coroutine once it's done or if an error occurred
         end
     end

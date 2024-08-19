@@ -39,7 +39,7 @@ function CreateItemSplitterDialog(
 
     local decrementValue = function ()
         local currentNumber = editBox:GetNumber()
-        editBox:SetNumber(ns.math_min(currentNumber - 1, maximumValue))
+        editBox:SetNumber(ns.math_max(currentNumber - 1, 1))
     end
     
     frame.editBox = editBox
