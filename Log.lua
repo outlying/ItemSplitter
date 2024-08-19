@@ -9,7 +9,7 @@ local LOG_LEVELS = {
 }
 
 -- Set the current log level (only logs at or above this level will be printed)
-local CURRENT_LOG_LEVEL = LOG_LEVELS.DEBUG -- Adjust this to control log verbosity
+local CURRENT_LOG_LEVEL = LOG_LEVELS.WARN -- Adjust this to control log verbosity
 
 -- Create the Log table in the ns (namespace) table
 ns.Log = {}
