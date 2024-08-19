@@ -35,6 +35,17 @@ function ns.mergeTables(t1, t2)
     return result
 end
 
+function ns.safeLoop(message, functionCode)
+    local i = 0
+    while true do
+        functionCode()
+        i = i + 1
+        if i >= 100 then
+            ns.Log.warn(message)
+        end
+    end
+end
+
 function ns.RunWithDelay(delay, functions)
     local function runNext(index)
         if index <= #functions then
