@@ -3,6 +3,8 @@
 ## Version: 11.0.2
 ## Author: outlying
 ## IconTexture: Interface\Icons\misc_torgast_theboxofmanythings
+## Description: Allows users to split stacks of items into smaller quantities within the inventory.
+## License: GPLv3
 
 Log.lua
 Utils.lua
