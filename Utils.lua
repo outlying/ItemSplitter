@@ -4,6 +4,11 @@ ns.Constant = {
     MAX_SAFE_LOOP = 200
 }
 
+function ns.location_string(isGuildBank, bagIndex, slotIndex) 
+    local prefix = isGuildBank and "G" or "S"
+    return string.format("%s/%d/%d", prefix, bagIndex, slotIndex)
+end
+
 function ns.math_min(a, b)
     if a < b then
         return a
