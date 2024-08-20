@@ -207,17 +207,14 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             safe = 0
             while true do
                 local inprogressItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
-                if inprogressItemInfo then
-                    if inprogressItemInfo.stackCount == currentStackSize - targetStacksSize then
-                        currentStackSize = currentStackSize - targetStacksSize
-                        ns.Log.debug("Current stack size: " .. currentStackSize)
-                        break
-                    else
-                        coroutine.yield()
-                    end
-                else
-                    coroutine.yield()
+
+                if inprogressItemInfo and inprogressItemInfo.stackCount == currentStackSize - targetStacksSize then
+                    currentStackSize = currentStackSize - targetStacksSize
+                    ns.Log.debug("Current stack size: " .. currentStackSize)
+                    break
                 end
+                coroutine.yield()
+                
                 safe = safe + 1
                 if safe >= 200 then
                     ns.Log.error("Waiting for source item stack change failed")
