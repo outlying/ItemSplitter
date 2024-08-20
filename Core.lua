@@ -24,7 +24,7 @@ ContainerScope.PERSONAL = {
     Enum.BagIndex.ReagentBag
  }
 
- ContainerScope.PERSONAL_WITH_REGENTS = ns.mergeTables(ContainerScope.PERSONAL, ContainerScope.PERSONAL_REGENTS)
+ ContainerScope.PERSONAL_WITH_REGENTS = ns.mergeTables({ Enum.BagIndex.ReagentBag }, ContainerScope.PERSONAL)
 
  ContainerScope.BANK = {
     Enum.BagIndex.Bank,
@@ -37,14 +37,9 @@ ContainerScope.PERSONAL = {
     Enum.BagIndex.BankBag_7
  }
 
- ContainerScope.BANK_REGENTS = {
-    Enum.BagIndex.Reagentbank
- }
-
- ContainerScope.BANK_WITH_REGENTS = ns.mergeTables(ContainerScope.BANK, ContainerScope.BANK_REGENTS)
+ ContainerScope.BANK_REGENTS_WITH_BANK = ns.mergeTables({ Enum.BagIndex.Reagentbank }, ContainerScope.BANK)
 
 local dialog = nil
-local contextGuildBank = false
 
 --[[
     Hide, unparent and dereference current instance of dialog
@@ -111,21 +106,39 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
 
     -- TODO it should allow to support other containers
 
-    local startBag = 0
-    local endBag = 4
+    local bags = ContainerScope.PERSONAL
 
-    if isGuildBank then
-        startBag = sourceBagIndex
-        endBag = sourceBagIndex
+    if sourceBagIndex == Enum.BagIndex.ReagentBag then
+        bags = ContainerScope.PERSONAL_WITH_REGENTS
     end
 
-    for bag = startBag, endBag do
+    if sourceBagIndex == Enum.BagIndex.Reagentbank then
+        bags = ContainerScope.BANK_REGENTS_WITH_BANK
+    end
+        
+    if ns.containsValue(ContainerScope.BANK, sourceBagIndex) then
+        bags = ContainerScope.BANK
+    end
+
+    if sourceBagIndex == 13 then -- Warband
+        bags = { 13 }
+    end
+
+    if isGuildBank then
+        bags = { sourceBagIndex }
+    end
+
+    for _, bag in ipairs(bags) do
         local maxSlots = nil
         local startSlot = 1
         
         if isGuildBank then
             startSlot = sourceSlotIndex + 1
-            maxSlots = 98 -- For bank tabs is always the same -- TODO const ?
+            maxSlots = 98
+        elseif bag == Enum.BagIndex.Reagentbank then
+            maxSlots = 98
+        elseif bag == Enum.BagIndex.Bank then
+            maxSlots = 28
         else
             maxSlots = GetContainerNumSlots(bag)
         end

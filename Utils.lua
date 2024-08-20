@@ -4,6 +4,15 @@ ns.Constant = {
     MAX_SAFE_LOOP = 200
 }
 
+function ns.containsValue(t, value)
+    for index, val in ipairs(t) do
+        if val == value then
+            return true
+        end
+    end
+    return false
+end
+
 function ns.location_string(isGuildBank, bagIndex, slotIndex) 
     local prefix = isGuildBank and "G" or "S"
     return string.format("%s/%d/%d", prefix, bagIndex, slotIndex)
