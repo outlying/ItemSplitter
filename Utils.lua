@@ -1,5 +1,9 @@
 local addonName, ns = ...
 
+ns.Constant = {
+    MAX_SAFE_LOOP = 200
+}
+
 function ns.math_min(a, b)
     if a < b then
         return a
