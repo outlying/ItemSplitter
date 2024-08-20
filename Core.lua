@@ -171,17 +171,17 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
 
     while currentStackSize > targetStacksSize do
 
-        local safe = 0
-        while true do
+        for attempt = 1, ns.Constant.MAX_SAFE_LOOP do
             local sourceItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
-            if sourceItemInfo.isLocked then
-                coroutine.yield()
-            else
+            
+            if sourceItemInfo and not sourceItemInfo.isLocked then
                 break
             end
-            safe = safe + 1
-            if safe >= 100 then
-                ns.Log.error("Waiting for source item lock removal failed")
+            
+            coroutine.yield()
+        
+            if attempt == ns.Constant.MAX_SAFE_LOOP then
+                ns.Log.error("Waiting for non-nil and non-locked source item failed")
                 return
             end
         end
@@ -192,8 +192,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             table.insert(excluded, {destBag, destSlot})
 
             -- This is special guild bank handling
-            if isGuildBank and transferBag and transferSlot then
-                
+            if isGuildBank and transferBag and transferSlot then  
                 SplitGuildBankItem(sourceBagIndex, sourceBagIndex, targetStacksSize)
                 PickupGuildBankItem(destBag, destSlot)
 
@@ -204,22 +203,18 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             end
 
             -- Wait on an actual change
-            safe = 0
-            while true do
+            local expectedStackSize = currentStackSize - targetStacksSize
+            for attempt = 1, ns.Constant.MAX_SAFE_LOOP do
                 local inprogressItemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
-                if inprogressItemInfo then
-                    if inprogressItemInfo.stackCount == currentStackSize - targetStacksSize then
-                        currentStackSize = currentStackSize - targetStacksSize
-                        ns.Log.debug("Current stack size: " .. currentStackSize)
-                        break
-                    else
-                        coroutine.yield()
-                    end
-                else
-                    coroutine.yield()
+
+                if inprogressItemInfo and inprogressItemInfo.stackCount == expectedStackSize then
+                    currentStackSize = expectedStackSize
+                    ns.Log.debug("Current stack size: " .. currentStackSize)
+                    break
                 end
-                safe = safe + 1
-                if safe >= 200 then
+                coroutine.yield()
+
+                if attempt >= ns.Constant.MAX_SAFE_LOOP then
                     ns.Log.error("Waiting for source item stack change failed")
                     return
                 end

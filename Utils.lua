@@ -1,12 +1,8 @@
 local addonName, ns = ...
 
-ns.debugEnabled = true
-
-function ns:debug(msg)
-    if self.debugEnabled then
-        print(msg)
-    end
-end
+ns.Constant = {
+    MAX_SAFE_LOOP = 200
+}
 
 function ns.math_min(a, b)
     if a < b then
@@ -33,28 +29,4 @@ function ns.mergeTables(t1, t2)
         table.insert(result, v)
     end
     return result
-end
-
-function ns.safeLoop(message, functionCode)
-    local i = 0
-    while true do
-        functionCode()
-        i = i + 1
-        if i >= 100 then
-            ns.Log.warn(message)
-        end
-    end
-end
-
-function ns.RunWithDelay(delay, functions)
-    local function runNext(index)
-        if index <= #functions then
-            C_Timer.After(delay, function()
-                functions[index]()
-                runNext(index + 1)
-            end)
-        end
-    end
-
-    runNext(1)
 end
