@@ -121,14 +121,16 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
 
     for bag = startBag, endBag do
         local maxSlots = nil
+        local startSlot = 1
         
         if isGuildBank then
+            startSlot = sourceSlotIndex + 1
             maxSlots = 98 -- For bank tabs is always the same -- TODO const ?
         else
             maxSlots = GetContainerNumSlots(bag)
         end
 
-        for slot = 1, maxSlots do
+        for slot = startSlot, maxSlots do
             -- Check if the current bag-slot pair is excluded
             if not isExcluded(bag, slot) then
                 local itemInfo = CollectItemInfo(isGuildBank, bag, slot)
@@ -149,6 +151,7 @@ end
 ]]
 
 local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+    ns.Log.debug("Splitting " .. ns.location_string(isGuildBank, sourceBagIndex, sourceSlotIndex))
     local itemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
 
     if not itemInfo then
@@ -159,15 +162,6 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
     local currentStackSize = itemInfo.stackCount
     ClearCursor() -- Drop any items held by cursor
     local excluded = {} -- We are keeping local exclude list to not duplicate destination locations
-    local transferBag, transferSlot = nil, nil
-
-    if isGuildBank then
-        transferBag, transferSlot = FindEmptySlot(excluded, false, sourceBagIndex, sourceSlotIndex) -- False we look in players bags
-        if not transferBag or not transferSlot then
-            ns.Log.info("At least one empty slot in your bags is required to do that")
-            return
-        end
-    end
 
     while currentStackSize > targetStacksSize do
 
@@ -190,10 +184,11 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
 
         if destBag and destSlot then
             table.insert(excluded, {destBag, destSlot})
+            ns.Log.debug("Moving " .. targetStacksSize .. " items, from " .. ns.location_string(isGuildBank, sourceBagIndex, sourceSlotIndex) .. " to " .. ns.location_string(isGuildBank, destBag, destSlot))
 
             -- This is special guild bank handling
-            if isGuildBank and transferBag and transferSlot then  
-                SplitGuildBankItem(sourceBagIndex, sourceBagIndex, targetStacksSize)
+            if isGuildBank then
+                SplitGuildBankItem(sourceBagIndex, sourceSlotIndex, targetStacksSize)
                 PickupGuildBankItem(destBag, destSlot)
 
             -- Other bags / banks handling
@@ -215,7 +210,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
                 coroutine.yield()
 
                 if attempt >= ns.Constant.MAX_SAFE_LOOP then
-                    ns.Log.error("Waiting for source item stack change failed")
+                    ns.Log.error("Waiting for source item (" .. ns.location_string(isGuildBank, sourceBagIndex, sourceSlotIndex) .. ") stack change failed")
                     return
                 end
             end
