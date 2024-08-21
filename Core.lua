@@ -39,6 +39,14 @@ ContainerScope.PERSONAL = {
 
  ContainerScope.BANK_REGENTS_WITH_BANK = ns.mergeTables({ Enum.BagIndex.Reagentbank }, ContainerScope.BANK)
 
+ ContainerScope.WARBAND_BANK = {
+    Enum.BagIndex.AccountBankTab_1,
+    Enum.BagIndex.AccountBankTab_2,
+    Enum.BagIndex.AccountBankTab_3,
+    Enum.BagIndex.AccountBankTab_4,
+    Enum.BagIndex.AccountBankTab_5,
+ }
+
 local dialog = nil
 
 --[[
@@ -104,8 +112,6 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
         return false
     end
 
-    -- TODO it should allow to support other containers
-
     local bags = ContainerScope.PERSONAL
 
     if sourceBagIndex == Enum.BagIndex.ReagentBag then
@@ -120,8 +126,8 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
         bags = ContainerScope.BANK
     end
 
-    if sourceBagIndex == 13 then -- Warband
-        bags = { 13 }
+    if ns.containsValue(ContainerScope.WARBAND_BANK, sourceBagIndex) then
+        bags = { sourceBagIndex }
     end
 
     if isGuildBank then
@@ -271,10 +277,10 @@ local function SourceLocation(parent)
     ns.Log.debug("Parent x1:", parent:GetName(), "ID:", parent:GetID())
     ns.Log.debug("Parent x2:", parent:GetParent():GetName(), "ID:", parent:GetParent():GetID())
     ns.Log.debug("Parent x3:", parent:GetParent():GetParent():GetName(), "ID:", parent:GetParent():GetParent():GetID())
-
-    -- In-game Warbank
-    if parent:GetParent():GetParent():GetName() == "AccountBankPanel" then
-        -- TODO figure out tab and slot
+    
+    if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
+        ns.Log.debug("We are checking warband bank")
+        bagIndex = Enum.BagIndex.AccountBankTab_1 -- TODO this is stil not done
     end
 
     return isGuildBank, bagIndex, slotIndex
