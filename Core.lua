@@ -277,10 +277,10 @@ local function SourceLocation(parent)
     ns.Log.debug("Parent x1:", parent:GetName(), "ID:", parent:GetID())
     ns.Log.debug("Parent x2:", parent:GetParent():GetName(), "ID:", parent:GetParent():GetID())
     ns.Log.debug("Parent x3:", parent:GetParent():GetParent():GetName(), "ID:", parent:GetParent():GetParent():GetID())
-    
+
     if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
-        ns.Log.debug("We are checking warband bank")
-        bagIndex = Enum.BagIndex.AccountBankTab_1 -- TODO this is stil not done
+        bagIndex = parent:GetBankTabID()
+        slotIndex = parent:GetContainerSlotID()
     end
 
     return isGuildBank, bagIndex, slotIndex
