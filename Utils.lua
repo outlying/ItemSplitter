@@ -4,6 +4,34 @@ ns.Constant = {
     MAX_SAFE_LOOP = 200
 }
 
+function ns.printObjectDetails(obj)
+    -- Create a table to store the keys
+    local keys = {}
+
+    -- Insert all keys into the keys table
+    for key in pairs(obj) do
+        -- Only add string keys to the list to avoid comparison errors
+        if type(key) == "string" then
+            table.insert(keys, key)
+        end
+    end
+
+    -- Sort the keys alphabetically
+    table.sort(keys)
+
+    -- Print the sorted keys and their corresponding values
+    for _, key in ipairs(keys) do
+        print(key, obj[key])
+    end
+
+    -- Print non-string keys separately without sorting
+    for key, value in pairs(obj) do
+        if type(key) ~= "string" then
+            print(key, value)
+        end
+    end
+end
+
 function ns.containsValue(t, value)
     for index, val in ipairs(t) do
         if val == value then
