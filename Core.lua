@@ -270,13 +270,9 @@ local function SourceLocation(parent)
         bagIndex = GetCurrentGuildBankTab()
     end
 
-    ns.Log.debug("-= Identification of the source bag-slot =-")
-    ns.Log.debug("Standard recognition: " .. ns.location_string(isGuildBank, bagIndex, slotIndex))
-
-    ns.Log.debug("Tracking")
-    ns.Log.debug("Parent x1:", parent:GetName(), "ID:", parent:GetID())
-    ns.Log.debug("Parent x2:", parent:GetParent():GetName(), "ID:", parent:GetParent():GetID())
-    ns.Log.debug("Parent x3:", parent:GetParent():GetParent():GetName(), "ID:", parent:GetParent():GetParent():GetID())
+    if parent:GetParent():GetName() == "ContainerFrameCombinedBags" then -- Blizzard combined bags mode
+        bagIndex, slotIndex = parent:GetItemLocation():GetBagAndSlot()
+    end
 
     if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
         bagIndex = parent:GetBankTabID()
