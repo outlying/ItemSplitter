@@ -264,6 +264,19 @@ local function SourceLocation(parent)
         bagIndex = GetCurrentGuildBankTab()
     end
 
+    ns.Log.debug("-= Identification of the source bag-slot =-")
+    ns.Log.debug("Standard recognition: " .. ns.location_string(isGuildBank, bagIndex, slotIndex))
+
+    ns.Log.debug("Tracking")
+    ns.Log.debug("Parent x1: " .. parent:GetName() .. " ID: " .. tostring(parent:GetID()))
+    ns.Log.debug("Parent x2: " .. parent:GetParent():GetName() .. " ID: " .. parent:GetParent():GetID())
+    ns.Log.debug("Parent x3: " .. parent:GetParent():GetParent():GetName() .. " ID: " .. parent:GetParent():GetParent():GetID())
+
+    -- In-game Warbank
+    if parent:GetParent():GetParent():GetName() == "AccountBankPanel" then
+        -- TODO figure out tab and slot
+    end
+
     return isGuildBank, bagIndex, slotIndex
 end
 
