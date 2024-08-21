@@ -22,9 +22,12 @@ local CURRENT_LOG_LEVEL = LOG_LEVELS.WARN
 ns.Log = {}
 
 -- Internal function to handle logging
-local function logMessage(message, level)
-    if not message then
-        return
+local function logMessage(level, ...)
+    local message = ""
+
+    for i = 1, select("#", ...) do
+        local arg = select(i, ...)
+        message = message .. tostring(arg) .. " "
     end
 
     local logLevelValue = LOG_LEVELS[level] or LOG_LEVELS.INFO
@@ -44,23 +47,23 @@ local function logMessage(message, level)
             color = "|cffffffd7" -- Light yellow for info
         end
 
-        DEFAULT_CHAT_FRAME:AddMessage(color .. "[" .. level .. "]:|r " .. tostring(message))
+        DEFAULT_CHAT_FRAME:AddMessage(color .. "[" .. level .. "]:|r " .. message)
     end
 end
 
 -- Define methods for each log level in ns.Log
-function ns.Log.error(message)
-    logMessage(message, "ERROR")
+function ns.Log.error(...)
+    logMessage("ERROR", ...)
 end
 
-function ns.Log.warn(message)
-    logMessage(message, "WARN")
+function ns.Log.warn(...)
+    logMessage("WARN", ...)
 end
 
-function ns.Log.info(message)
-    logMessage(message, "INFO")
+function ns.Log.info(...)
+    logMessage("INFO", ...)
 end
 
-function ns.Log.debug(message)
-    logMessage(message, "DEBUG")
+function ns.Log.debug(...)
+    logMessage("DEBUG", ...)
 end
