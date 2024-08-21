@@ -268,9 +268,9 @@ local function SourceLocation(parent)
     ns.Log.debug("Standard recognition: " .. ns.location_string(isGuildBank, bagIndex, slotIndex))
 
     ns.Log.debug("Tracking")
-    ns.Log.debug("Parent x1: " .. parent:GetName() .. " ID: " .. tostring(parent:GetID()))
-    ns.Log.debug("Parent x2: " .. parent:GetParent():GetName() .. " ID: " .. parent:GetParent():GetID())
-    ns.Log.debug("Parent x3: " .. parent:GetParent():GetParent():GetName() .. " ID: " .. parent:GetParent():GetParent():GetID())
+    ns.Log.debug("Parent x1:", parent:GetName(), "ID:", parent:GetID())
+    ns.Log.debug("Parent x2:", parent:GetParent():GetName(), "ID:", parent:GetParent():GetID())
+    ns.Log.debug("Parent x3:", parent:GetParent():GetParent():GetName(), "ID:", parent:GetParent():GetParent():GetID())
 
     -- In-game Warbank
     if parent:GetParent():GetParent():GetName() == "AccountBankPanel" then
