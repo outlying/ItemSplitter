@@ -261,19 +261,42 @@ end
 ]]
 
 local function SourceLocation(parent)
+    local parentName = parent:GetName()
+
     local isGuildBank = false
     local bagIndex = parent:GetParent():GetID()
     local slotIndex = parent:GetID()
 
+    local locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
+
+    ns.Log.debug("Parent name:", parentName)
+
+    -- This should work everywhere except guild bank as it's container numeration is not shared with other spaces
+    if locationBagIndex and locationSlotIndex then
+        ns.Log.debug("BI", locationBagIndex, "SI", locationSlotIndex, "GBankTab", GetCurrentGuildBankTab())
+        bagIndex = locationBagIndex
+        slotIndex = locationSlotIndex
+    end
+
+    -- Bagnon guild bank
+    if parentName and string.sub(parentName, 1, 15) == "BagnonGuildItem" and locationSlotIndex then
+        isGuildBank = true
+        bagIndex = GetCurrentGuildBankTab()
+        slotIndex = locationSlotIndex
+    end
+
+    -- Blizzard Guild Bank Frame
     if parent:GetParent():GetParent():GetName() == "GuildBankFrame" then
         isGuildBank = true
         bagIndex = GetCurrentGuildBankTab()
     end
 
-    if parent:GetParent():GetName() == "ContainerFrameCombinedBags" then -- Blizzard combined bags mode
+    -- Blizzard combined bags mode
+    if parent:GetParent():GetName() == "ContainerFrameCombinedBags" then
         bagIndex, slotIndex = parent:GetItemLocation():GetBagAndSlot()
     end
 
+    -- Blizzard Warband bank
     if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
         bagIndex = parent:GetBankTabID()
         slotIndex = parent:GetContainerSlotID()
