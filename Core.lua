@@ -273,14 +273,16 @@ local function SourceLocation(parent)
 
     -- This should work everywhere except guild bank as it's container numeration is not shared with other spaces
     if locationBagIndex and locationSlotIndex then
-        ns.Log.debug("BI", locationBagIndex, "SI", locationSlotIndex)
+        ns.Log.debug("BI", locationBagIndex, "SI", locationSlotIndex, "GBankTab", GetCurrentGuildBankTab())
         bagIndex = locationBagIndex
         slotIndex = locationSlotIndex
     end
 
     -- Bagnon guild bank
-    if parentName and string.sub(parentName, 1, 15) == "BagnonGuildItem" then
+    if parentName and string.sub(parentName, 1, 15) == "BagnonGuildItem" and locationSlotIndex then
         isGuildBank = true
+        bagIndex = GetCurrentGuildBankTab()
+        slotIndex = locationSlotIndex
     end
 
     -- Blizzard Guild Bank Frame
