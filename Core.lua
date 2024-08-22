@@ -267,7 +267,10 @@ local function SourceLocation(parent)
     local bagIndex = parent:GetParent():GetID()
     local slotIndex = parent:GetID()
 
-    local locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
+    local locationBagIndex, locationSlotIndex = nil, nil
+    if parent and parent:GetItemLocation() and parent:GetItemLocation():GetBagAndSlot() then
+        locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
+    end
 
     ns.Log.debug("Parent name:", parentName)
 
