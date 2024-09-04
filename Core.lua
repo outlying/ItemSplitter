@@ -335,6 +335,7 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     dialog = CreateItemSplitterDialog(maxStack)
     dialog:ClearAllPoints()
     dialog:SetPoint(anchor, parent, anchorTo, 0, 0)
+    dialog.editBox:SetFocus()
 
     local isGuildBank, bagIndex, slotIndex = SourceLocation(parent)
 

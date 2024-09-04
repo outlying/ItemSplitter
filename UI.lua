@@ -31,6 +31,10 @@ function CreateItemSplitterDialog(
     editBox:SetNumber(1)
     editBox:SetJustifyH("RIGHT")
     editBox:SetTextInsets(0, 5, 0, 0)
+    editBox:SetScript("OnTextChanged", function(self)
+        local currentNumber = editBox:GetNumber()
+        editBox:SetNumber(ns.math_min(currentNumber, maximumValue))
+    end)
 
     local incrementValue = function ()
         local currentNumber = editBox:GetNumber()
