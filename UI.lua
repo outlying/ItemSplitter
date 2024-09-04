@@ -108,5 +108,12 @@ function CreateItemSplitterDialog(
         return frame.editBox:GetNumber()
     end
 
+    frame:SetScript("OnShow", function(self)
+        self.editBox:SetFocus()
+        C_Timer.After(0.3, function()
+            self.editBox:HighlightText(0, -1)
+        end)
+    end)
+
     return frame
 end
