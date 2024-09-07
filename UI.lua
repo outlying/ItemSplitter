@@ -36,6 +36,17 @@ function CreateItemSplitterDialog(
         editBox:SetNumber(ns.math_min(currentNumber, maximumValue))
     end)
 
+    -- Support for Enter and Alt+Enter key press
+    editBox:SetScript("OnKeyDown", function(self, key)
+        if key == "ENTER" then
+            if IsAltKeyDown() then
+                frame.autoSplitButton:Click()
+            else
+                frame.splitButton:Click()
+            end
+        end
+    end)
+
     local incrementValue = function ()
         local currentNumber = editBox:GetNumber()
         editBox:SetNumber(ns.math_min(currentNumber + 1, maximumValue))
@@ -107,13 +118,6 @@ function CreateItemSplitterDialog(
     function frame:GetValue()
         return frame.editBox:GetNumber()
     end
-
-    frame:SetScript("OnShow", function(self)
-        self.editBox:SetFocus()
-        C_Timer.After(0.3, function()
-            self.editBox:HighlightText(0, -1)
-        end)
-    end)
 
     return frame
 end
