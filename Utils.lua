@@ -4,6 +4,51 @@ ns.Constant = {
     MAX_SAFE_LOOP = 200
 }
 
+function ns.isParentNameInHierarchy(parent, nameToMatch, level)
+    if not parent then
+        return false
+    end
+
+    if not level then
+        level = 1
+    end
+
+    local parentName = parent:GetName()
+    if parentName and parentName == nameToMatch then
+        ns.Log.debug("Match found at level", level, ":", parentName)
+        return true
+    end
+
+    -- Recursively call the function for the next parent
+    if parent:GetParent() then
+        return ns.isParentNameInHierarchy(parent:GetParent(), nameToMatch, level + 1)
+    end
+
+    return false
+end
+
+function ns.printParentNames(parent, level)
+    if not parent then
+        return
+    end
+
+    if not level then
+        level = 1
+    end
+
+    local levelText = string.rep("-parent", level - 1) -- Create a level-specific text
+
+    local parentName = parent:GetName()
+    if parentName then
+        ns.Log.debug("Parent" .. levelText .. " name:", parentName)
+    end
+
+    -- Recursively call the function for the next parent
+    if parent:GetParent() then
+        ns.printParentNames(parent:GetParent(), level + 1)
+    end
+end
+
 function ns.printObjectDetails(obj)
     -- Create a table to store the keys
     local keys = {}

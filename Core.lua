@@ -282,9 +282,8 @@ local function SourceLocation(parent)
         locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
     end
 
-    ns.Log.debug("Parent name:", parentName)
-    ns.Log.debug("Parent-parent name:", parentParentName)
-    ns.Log.debug("Parent-parent-parent name:", parentParentParentName)
+    ns.printParentNames(parent)
+
     ns.Log.debug("Current guild bank tab opened:", GetCurrentGuildBankTab())
 
     -- This should work everywhere except guild bank as it's container numeration is not shared with other spaces
@@ -295,7 +294,7 @@ local function SourceLocation(parent)
     end
 
     -- Baganator guild bank --
-    if parentParentParentName == "Baganator_SingleViewGuildViewFrame" then
+    if ns.isParentNameInHierarchy(parent, "Baganator_SingleViewGuildViewFrame") then
         isGuildBank = true
         bagIndex = GetCurrentGuildBankTab()
     end
