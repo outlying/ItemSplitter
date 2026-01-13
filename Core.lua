@@ -285,10 +285,12 @@ local function SourceLocation(parent)
     local bagIndex = parent:GetParent():GetID()
     local slotIndex = parent:GetID()
     local forceBankScope = false
+    local hasItemLocation = false
 
     local locationBagIndex, locationSlotIndex = nil, nil
     if parent and parent:GetItemLocation() and parent:GetItemLocation():GetBagAndSlot() then
         locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
+        hasItemLocation = locationBagIndex ~= nil and locationSlotIndex ~= nil
     end
 
     ns.printParentNames(parent)
@@ -352,7 +354,7 @@ local function SourceLocation(parent)
         slotIndex = parent:GetContainerSlotID()
     end
 
-    return isGuildBank, bagIndex, slotIndex, forceBankScope
+    return isGuildBank, bagIndex, slotIndex, forceBankScope, hasItemLocation
 end
 
 -- Overrides standard function for split dialog
@@ -370,18 +372,27 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     end)
     dialog.editBox:SetFocus()
 
-    local isGuildBank, bagIndex, slotIndex, forceBankScope = SourceLocation(parent)
+    local isGuildBank, bagIndex, slotIndex, forceBankScope, hasItemLocation = SourceLocation(parent)
     local isMerchant = MerchantFrame and MerchantFrame:IsVisible()
 
     if isMerchant then
         dialog.autoSplitButton:Hide()
-        dialog.splitButton:SetText("Buy")
         dialog.splitButton:ClearAllPoints()
         dialog.splitButton:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 10)
+        if hasItemLocation then
+            dialog.splitButton:SetText("Sell")
+        else
+            dialog.splitButton:SetText("Buy")
+        end
     end
 
     dialog.splitButton:SetScript("OnClick", function()
-        parent.SplitStack(parent, dialog:GetValue()) -- original behaviour
+        local splitValue = dialog:GetValue()
+        if self and type(self.split) == "function" then
+            self.split(splitValue)
+        else
+            parent.SplitStack(parent, splitValue) -- original behaviour
+        end
         ClearDialog()
     end)
 
