@@ -1,6 +1,6 @@
-## Interface: 110100
+## Interface: 110207
 ## Title: Item Splitter
-## Version: 11.0.2
+## Version: 11.2.7
 ## Author: outlying
 ## IconTexture: Interface\Icons\misc_torgast_theboxofmanythings
 ## Description: Allows users to split stacks of items into smaller quantities within the inventory.
