@@ -49,3 +49,4 @@ luac.out
 *.wowproj
 *.wowsln
 Logs/
+AGENTS.md
