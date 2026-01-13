@@ -371,6 +371,14 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     dialog.editBox:SetFocus()
 
     local isGuildBank, bagIndex, slotIndex, forceBankScope = SourceLocation(parent)
+    local isMerchant = MerchantFrame and MerchantFrame:IsVisible()
+
+    if isMerchant then
+        dialog.autoSplitButton:Hide()
+        dialog.splitButton:SetText("Buy")
+        dialog.splitButton:ClearAllPoints()
+        dialog.splitButton:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 10)
+    end
 
     dialog.splitButton:SetScript("OnClick", function()
         parent.SplitStack(parent, dialog:GetValue()) -- original behaviour
