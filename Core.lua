@@ -101,7 +101,7 @@ end
     a second argument to be replaced with something better
 ]]
 
-local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotIndex)
+local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotIndex, forceBankScope)
 
     local function isExcluded(bag, slot)
         for _, pair in ipairs(exclude) do
@@ -132,6 +132,14 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
 
     if isGuildBank then
         bags = { sourceBagIndex }
+    end
+
+    if forceBankScope then
+        if ns.containsValue(ContainerScope.BANK, sourceBagIndex) or sourceBagIndex == Enum.BagIndex.Reagentbank then
+            bags = ContainerScope.BANK
+        else
+            bags = { sourceBagIndex }
+        end
     end
 
     for _, bag in ipairs(bags) do
@@ -169,7 +177,7 @@ end
     @return done (bool) - true if all is split, false in case of potential more items to split
 ]]
 
-local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize, forceBankScope)
     ns.Log.debug("Splitting " .. ns.location_string(isGuildBank, sourceBagIndex, sourceSlotIndex))
     local itemInfo = CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
 
@@ -199,7 +207,7 @@ local function AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targ
             end
         end
 
-        local destBag, destSlot = FindEmptySlot(excluded, isGuildBank, sourceBagIndex, sourceSlotIndex)
+        local destBag, destSlot = FindEmptySlot(excluded, isGuildBank, sourceBagIndex, sourceSlotIndex, forceBankScope)
 
         if destBag and destSlot then
             table.insert(excluded, {destBag, destSlot})
@@ -246,9 +254,9 @@ end
 
 local coroutineAutomaticSplit = nil
 
-local function StartAutomaticSplitSession(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+local function StartAutomaticSplitSession(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize, forceBankScope)
     coroutineAutomaticSplit = coroutine.create(function ()
-        AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize)
+        AutomaticSplit(isGuildBank, sourceBagIndex, sourceSlotIndex, targetStacksSize, forceBankScope)
         ClearDialog()
     end)
 end
@@ -276,6 +284,7 @@ local function SourceLocation(parent)
     local isGuildBank = false
     local bagIndex = parent:GetParent():GetID()
     local slotIndex = parent:GetID()
+    local forceBankScope = false
 
     local locationBagIndex, locationSlotIndex = nil, nil
     if parent and parent:GetItemLocation() and parent:GetItemLocation():GetBagAndSlot() then
@@ -317,13 +326,33 @@ local function SourceLocation(parent)
         bagIndex, slotIndex = parent:GetItemLocation():GetBagAndSlot()
     end
 
+    -- Blizzard personal bank (ensure auto-split stays in bank slots)
+    if BankFrame
+        and BankFrame:IsVisible()
+        and BankFrame:GetActiveBankType() == Enum.BankType.Character
+        and ns.isParentNameInHierarchy(parent, "BankFrame") then
+        forceBankScope = true
+        local bankBagId = parent.GetBagID and parent:GetBagID()
+        local bankSlotId = parent.GetSlotID and parent:GetSlotID()
+        if bankBagId and bankSlotId then
+            bagIndex = bankBagId
+            slotIndex = bankSlotId
+        elseif locationBagIndex and locationSlotIndex then
+            bagIndex = locationBagIndex
+            slotIndex = locationSlotIndex
+        else
+            bagIndex = Enum.BagIndex.Bank
+            slotIndex = parent:GetID()
+        end
+    end
+
     -- Blizzard Warband bank
     if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
         bagIndex = parent:GetBankTabID()
         slotIndex = parent:GetContainerSlotID()
     end
 
-    return isGuildBank, bagIndex, slotIndex
+    return isGuildBank, bagIndex, slotIndex, forceBankScope
 end
 
 -- Overrides standard function for split dialog
@@ -341,7 +370,7 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
     end)
     dialog.editBox:SetFocus()
 
-    local isGuildBank, bagIndex, slotIndex = SourceLocation(parent)
+    local isGuildBank, bagIndex, slotIndex, forceBankScope = SourceLocation(parent)
 
     dialog.splitButton:SetScript("OnClick", function()
         parent.SplitStack(parent, dialog:GetValue()) -- original behaviour
@@ -350,7 +379,7 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
 
     dialog.autoSplitButton:SetScript("OnClick", function ()
         DisableDialog()
-        StartAutomaticSplitSession(isGuildBank, bagIndex, slotIndex, dialog:GetValue())
+        StartAutomaticSplitSession(isGuildBank, bagIndex, slotIndex, dialog:GetValue(), forceBankScope)
     end)
 end
 
