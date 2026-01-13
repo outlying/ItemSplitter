@@ -308,6 +308,11 @@ local function SourceLocation(parent)
         bagIndex = GetCurrentGuildBankTab()
     end
 
+    -- Baganator personal bank
+    if ns.isParentNameInHierarchy(parent, "Baganator_CategoryViewBankViewFrameblizzard") then
+        forceBankScope = true
+    end
+
     -- Bagnon guild bank
     if parentName and string.sub(parentName, 1, 15) == "BagnonGuildItem" and locationSlotIndex then
         isGuildBank = true
