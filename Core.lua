@@ -294,7 +294,7 @@ local function SourceLocation(parent)
     end
 
     -- Baganator guild bank --
-    if ns.isParentNameInHierarchy(parent, "Baganator_SingleViewGuildViewFrame") then
+    if ns.isParentNameInHierarchy(parent, "Baganator_SingleViewGuildViewFrameblizzard") then
         isGuildBank = true
         bagIndex = GetCurrentGuildBankTab()
     end
