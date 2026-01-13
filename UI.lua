@@ -33,7 +33,7 @@ function CreateItemSplitterDialog(
     editBox:SetTextInsets(0, 5, 0, 0)
     editBox:SetScript("OnTextChanged", function(self)
         local currentNumber = editBox:GetNumber()
-        editBox:SetNumber(ns.math_min(currentNumber, maximumValue))
+        editBox:SetNumber(ns.math_min(ns.math_max(currentNumber, 1), maximumValue))
     end)
 
     -- Support for Enter and Alt+Enter key press
