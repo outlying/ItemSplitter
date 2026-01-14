@@ -40,7 +40,7 @@ function CreateItemSplitterDialog(
     infoFrame.text:SetPoint("BOTTOMRIGHT", infoFrame, "BOTTOMRIGHT", -12, 12)
     infoFrame.text:SetJustifyH("LEFT")
     infoFrame.text:SetJustifyV("TOP")
-    infoFrame.text:SetText("Information about the splitter dialog will go here.")
+    infoFrame.text:SetText("Item Splitter is maintained by Mermido-Silvermoon and built after hours.\nDonations in the form of in-game gold are always appreciated.\n\nFor technical issues or bug reports, please use:\ngithub.com/outlying/ItemSplitter\n\nVersion: @project-version@")
 
     infoFrame.CloseButton:SetScript("OnClick", function()
         infoFrame:Hide()
