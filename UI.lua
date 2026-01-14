@@ -22,6 +22,48 @@ function CreateItemSplitterDialog(
     frame.title:SetPoint("CENTER", frame.TitleBg, "CENTER", 5, 0)
     frame.title:SetText("Item Splitter")
 
+    -- Info window
+    local infoFrame = CreateFrame("Frame", nil, frame, "BasicFrameTemplateWithInset")
+    infoFrame:SetSize(260, 140)
+    infoFrame:SetPoint("TOPLEFT", frame, "TOPRIGHT", 8, 0)
+    infoFrame:SetFrameStrata("DIALOG")
+    infoFrame:Hide()
+
+    infoFrame.title = infoFrame:CreateFontString(nil, "OVERLAY")
+    infoFrame.title:SetFontObject("GameFontHighlight")
+    infoFrame.title:SetPoint("CENTER", infoFrame.TitleBg, "CENTER", 5, 0)
+    infoFrame.title:SetText("Info")
+
+    infoFrame.text = infoFrame:CreateFontString(nil, "OVERLAY")
+    infoFrame.text:SetFontObject("GameFontHighlightSmall")
+    infoFrame.text:SetPoint("TOPLEFT", infoFrame, "TOPLEFT", 12, -30)
+    infoFrame.text:SetPoint("BOTTOMRIGHT", infoFrame, "BOTTOMRIGHT", -12, 12)
+    infoFrame.text:SetJustifyH("LEFT")
+    infoFrame.text:SetJustifyV("TOP")
+    infoFrame.text:SetText("Item Splitter is maintained by Mermido-Silvermoon and built after hours.\nDonations in the form of in-game gold are always appreciated.\n\nFor technical issues or bug reports, please use:\ngithub.com/outlying/ItemSplitter\n\nVersion: @project-version@")
+
+    infoFrame.CloseButton:SetScript("OnClick", function()
+        infoFrame:Hide()
+    end)
+
+    -- Info button on the title bar
+    local infoButton = CreateFrame("Button", nil, frame)
+    infoButton:SetSize(32, 32)
+    infoButton:SetPoint("LEFT", frame.TitleBg, "LEFT", 0, -2)
+    infoButton:SetNormalTexture("Interface\\Common\\help-i")
+    infoButton:SetHighlightTexture("Interface\\Common\\help-i", "ADD")
+    infoButton:SetPushedTexture("Interface\\Common\\help-i")
+    infoButton:SetScript("OnClick", function()
+        if infoFrame:IsShown() then
+            infoFrame:Hide()
+        else
+            infoFrame:Show()
+        end
+    end)
+
+    frame.infoFrame = infoFrame
+    frame.infoButton = infoButton
+
     -- Edit box for number input
     local editBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
     editBox:SetSize(40, 20)
@@ -118,6 +160,16 @@ function CreateItemSplitterDialog(
     function frame:GetValue()
         return frame.editBox:GetNumber()
     end
+
+    function frame:SetInfoText(text)
+        if text and text ~= "" then
+            frame.infoFrame.text:SetText(text)
+        end
+    end
+
+    frame:HookScript("OnHide", function()
+        frame.infoFrame:Hide()
+    end)
 
     return frame
 end
