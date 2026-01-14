@@ -49,7 +49,7 @@ function CreateItemSplitterDialog(
     -- Info button on the title bar
     local infoButton = CreateFrame("Button", nil, frame)
     infoButton:SetSize(32, 32)
-    infoButton:SetPoint("RIGHT", frame.TitleBg, "RIGHT", -24, 0)
+    infoButton:SetPoint("LEFT", frame.TitleBg, "LEFT", 0, -2)
     infoButton:SetNormalTexture("Interface\\Common\\help-i")
     infoButton:SetHighlightTexture("Interface\\Common\\help-i", "ADD")
     infoButton:SetPushedTexture("Interface\\Common\\help-i")
