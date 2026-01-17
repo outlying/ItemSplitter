@@ -1,4 +1,5 @@
 ## Interface: 110207
+## Interface-Classic: 11507
 ## Title: Item Splitter
 ## Version: 11.2.7
 ## Author: outlying
