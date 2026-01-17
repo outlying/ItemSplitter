@@ -3,11 +3,6 @@
 ## 0.3.0
 ### Added
 - Initial WoW Classic support with legacy bag/index fallbacks and container item info compatibility.
-- `Interface-Classic` tag in the addon manifest.
-
-### Changed
-- Stack split override now supports legacy `OpenStackSplitFrame` call signature.
-- Safer frame/API checks for Classic clients (nil-guarded UI access).
 
 ## 0.2.1
 ### Added
