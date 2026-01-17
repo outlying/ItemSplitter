@@ -11,41 +11,62 @@ local PickupContainerItem = C_Container and C_Container.PickupContainerItem or P
 
 local f = CreateFrame("Frame") -- Main event frame
 
+local BAG_BACKPACK = (Enum and Enum.BagIndex and Enum.BagIndex.Backpack) or BACKPACK_CONTAINER or 0
+local BAG_REAGENT = (Enum and Enum.BagIndex and Enum.BagIndex.ReagentBag) or _G.REAGENTBAG_CONTAINER
+local BAG_BANK = (Enum and Enum.BagIndex and Enum.BagIndex.Bank) or BANK_CONTAINER or -1
+local BAG_REAGENT_BANK = (Enum and Enum.BagIndex and Enum.BagIndex.Reagentbank) or _G.REAGENTBANK_CONTAINER
+local NUM_PERSONAL_BAGS = NUM_BAG_SLOTS or 4
+local NUM_BANK_BAGS = NUM_BANKBAGSLOTS or 7
+
+local function BuildPersonalBags()
+    local bags = {}
+    if BAG_BACKPACK ~= nil then
+        table.insert(bags, BAG_BACKPACK)
+    end
+    for i = 1, NUM_PERSONAL_BAGS do
+        table.insert(bags, i)
+    end
+    return bags
+end
+
+local function BuildBankBags()
+    local bags = {}
+    if BAG_BANK ~= nil then
+        table.insert(bags, BAG_BANK)
+    end
+    for i = 1, NUM_BANK_BAGS do
+        table.insert(bags, NUM_PERSONAL_BAGS + i)
+    end
+    return bags
+end
+
+local function BuildSingleBag(bagIndex)
+    if bagIndex ~= nil then
+        return { bagIndex }
+    end
+    return {}
+end
+
+local function BuildWarbandBank()
+    if Enum and Enum.BagIndex and Enum.BagIndex.AccountBankTab_1 then
+        return {
+            Enum.BagIndex.AccountBankTab_1,
+            Enum.BagIndex.AccountBankTab_2,
+            Enum.BagIndex.AccountBankTab_3,
+            Enum.BagIndex.AccountBankTab_4,
+            Enum.BagIndex.AccountBankTab_5,
+        }
+    end
+    return {}
+end
+
 local ContainerScope = {}
-ContainerScope.PERSONAL = { 
-    Enum.BagIndex.Backpack,
-    Enum.BagIndex.Bag_1,
-    Enum.BagIndex.Bag_2,
-    Enum.BagIndex.Bag_3,
-    Enum.BagIndex.Bag_4
- }
-
- ContainerScope.PERSONAL_REGENTS = {
-    Enum.BagIndex.ReagentBag
- }
-
- ContainerScope.PERSONAL_WITH_REGENTS = ns.mergeTables({ Enum.BagIndex.ReagentBag }, ContainerScope.PERSONAL)
-
- ContainerScope.BANK = {
-    Enum.BagIndex.Bank,
-    Enum.BagIndex.BankBag_1,
-    Enum.BagIndex.BankBag_2,
-    Enum.BagIndex.BankBag_3,
-    Enum.BagIndex.BankBag_4,
-    Enum.BagIndex.BankBag_5,
-    Enum.BagIndex.BankBag_6,
-    Enum.BagIndex.BankBag_7
- }
-
- ContainerScope.BANK_REGENTS_WITH_BANK = ns.mergeTables({ Enum.BagIndex.Reagentbank }, ContainerScope.BANK)
-
- ContainerScope.WARBAND_BANK = {
-    Enum.BagIndex.AccountBankTab_1,
-    Enum.BagIndex.AccountBankTab_2,
-    Enum.BagIndex.AccountBankTab_3,
-    Enum.BagIndex.AccountBankTab_4,
-    Enum.BagIndex.AccountBankTab_5,
- }
+ContainerScope.PERSONAL = BuildPersonalBags()
+ContainerScope.PERSONAL_REGENTS = BuildSingleBag(BAG_REAGENT)
+ContainerScope.PERSONAL_WITH_REGENTS = ns.mergeTables(ContainerScope.PERSONAL_REGENTS, ContainerScope.PERSONAL)
+ContainerScope.BANK = BuildBankBags()
+ContainerScope.BANK_REGENTS_WITH_BANK = ns.mergeTables(BuildSingleBag(BAG_REAGENT_BANK), ContainerScope.BANK)
+ContainerScope.WARBAND_BANK = BuildWarbandBank()
 
 local dialog = nil
 
@@ -85,7 +106,17 @@ local function CollectItemInfo(isGuildBank, sourceBagIndex, sourceSlotIndex)
         itemInfo.isLocked = locked
         return itemInfo
     else
-        return GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+        local texture, itemCount, locked = GetContainerItemInfo(sourceBagIndex, sourceSlotIndex)
+        if type(texture) == "table" then
+            return texture
+        end
+        if not texture then
+            return nil
+        end
+        return {
+            stackCount = itemCount,
+            isLocked = locked
+        }
     end
 end
 
@@ -114,11 +145,11 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
 
     local bags = ContainerScope.PERSONAL
 
-    if sourceBagIndex == Enum.BagIndex.ReagentBag then
+    if BAG_REAGENT and sourceBagIndex == BAG_REAGENT then
         bags = ContainerScope.PERSONAL_WITH_REGENTS
     end
 
-    if sourceBagIndex == Enum.BagIndex.Reagentbank then
+    if BAG_REAGENT_BANK and sourceBagIndex == BAG_REAGENT_BANK then
         bags = ContainerScope.BANK_REGENTS_WITH_BANK
     end
         
@@ -135,7 +166,7 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
     end
 
     if forceBankScope then
-        if ns.containsValue(ContainerScope.BANK, sourceBagIndex) or sourceBagIndex == Enum.BagIndex.Reagentbank then
+        if ns.containsValue(ContainerScope.BANK, sourceBagIndex) or sourceBagIndex == BAG_REAGENT_BANK then
             bags = ContainerScope.BANK
         else
             bags = { sourceBagIndex }
@@ -149,9 +180,9 @@ local function FindEmptySlot(exclude, isGuildBank, sourceBagIndex, sourceSlotInd
         if isGuildBank then
             startSlot = sourceSlotIndex + 1
             maxSlots = 98
-        elseif bag == Enum.BagIndex.Reagentbank then
+        elseif BAG_REAGENT_BANK and bag == BAG_REAGENT_BANK then
             maxSlots = 98
-        elseif bag == Enum.BagIndex.Bank then
+        elseif bag == BAG_BANK then
             maxSlots = 28
         else
             maxSlots = GetContainerNumSlots(bag)
@@ -269,33 +300,29 @@ end
 ]]
 
 local function SourceLocation(parent)
-    local parentName = parent:GetName()
-    local parentParentName = nil
-    local parentParentParentName = nil
-
-    if parent:GetParent() and parent:GetParent():GetName() then
-        parentParentName = parent:GetParent():GetName()
-    end
-
-    if parent:GetParent() and parent:GetParent():GetParent() and parent:GetParent():GetParent():GetName() then
-        parentParentParentName = parent:GetParent():GetParent():GetName()
-    end
+    local parentName = parent and parent.GetName and parent:GetName() or nil
+    local parentParent = parent and parent.GetParent and parent:GetParent() or nil
+    local parentParentName = parentParent and parentParent.GetName and parentParent:GetName() or nil
+    local parentParentParent = parentParent and parentParent.GetParent and parentParent:GetParent() or nil
+    local parentParentParentName = parentParentParent and parentParentParent.GetName and parentParentParent:GetName() or nil
 
     local isGuildBank = false
-    local bagIndex = parent:GetParent():GetID()
-    local slotIndex = parent:GetID()
+    local bagIndex = parentParent and parentParent.GetID and parentParent:GetID() or nil
+    local slotIndex = parent and parent.GetID and parent:GetID() or nil
     local forceBankScope = false
     local hasItemLocation = false
 
     local locationBagIndex, locationSlotIndex = nil, nil
-    if parent and parent:GetItemLocation() and parent:GetItemLocation():GetBagAndSlot() then
+    if parent and parent.GetItemLocation and parent:GetItemLocation() and parent:GetItemLocation().GetBagAndSlot and parent:GetItemLocation():GetBagAndSlot() then
         locationBagIndex, locationSlotIndex = parent:GetItemLocation():GetBagAndSlot()
         hasItemLocation = locationBagIndex ~= nil and locationSlotIndex ~= nil
     end
 
     ns.printParentNames(parent)
 
-    ns.Log.debug("Current guild bank tab opened:", GetCurrentGuildBankTab())
+    if GetCurrentGuildBankTab then
+        ns.Log.debug("Current guild bank tab opened:", GetCurrentGuildBankTab())
+    end
 
     -- This should work everywhere except guild bank as it's container numeration is not shared with other spaces
     if locationBagIndex and locationSlotIndex then
@@ -307,7 +334,9 @@ local function SourceLocation(parent)
     -- Baganator guild bank --
     if ns.isParentNameInHierarchy(parent, "Baganator_SingleViewGuildViewFrameblizzard") then
         isGuildBank = true
-        bagIndex = GetCurrentGuildBankTab()
+        if GetCurrentGuildBankTab then
+            bagIndex = GetCurrentGuildBankTab()
+        end
     end
 
     -- Baganator personal bank
@@ -318,24 +347,32 @@ local function SourceLocation(parent)
     -- Bagnon guild bank
     if parentName and string.sub(parentName, 1, 15) == "BagnonGuildItem" and locationSlotIndex then
         isGuildBank = true
-        bagIndex = GetCurrentGuildBankTab()
+        if GetCurrentGuildBankTab then
+            bagIndex = GetCurrentGuildBankTab()
+        end
         slotIndex = locationSlotIndex
     end
 
     -- Blizzard Guild Bank Frame
-    if parent:GetParent():GetParent():GetName() == "GuildBankFrame" then
+    if parentParentParentName == "GuildBankFrame" then
         isGuildBank = true
-        bagIndex = GetCurrentGuildBankTab()
+        if GetCurrentGuildBankTab then
+            bagIndex = GetCurrentGuildBankTab()
+        end
     end
 
     -- Blizzard combined bags mode
-    if parent:GetParent():GetName() == "ContainerFrameCombinedBags" then
+    if parentParentName == "ContainerFrameCombinedBags" and parent.GetItemLocation and parent:GetItemLocation() and parent:GetItemLocation().GetBagAndSlot then
         bagIndex, slotIndex = parent:GetItemLocation():GetBagAndSlot()
     end
 
     -- Blizzard personal bank (ensure auto-split stays in bank slots)
     if BankFrame
+        and BankFrame.IsVisible
         and BankFrame:IsVisible()
+        and BankFrame.GetActiveBankType
+        and Enum
+        and Enum.BankType
         and BankFrame:GetActiveBankType() == Enum.BankType.Character
         and ns.isParentNameInHierarchy(parent, "BankFrame") then
         forceBankScope = true
@@ -348,15 +385,23 @@ local function SourceLocation(parent)
             bagIndex = locationBagIndex
             slotIndex = locationSlotIndex
         else
-            bagIndex = Enum.BagIndex.Bank
+            bagIndex = BAG_BANK
             slotIndex = parent:GetID()
         end
     end
 
     -- Blizzard Warband bank
-    if BankFrame and BankFrame:IsVisible() and BankFrame:GetActiveBankType() == Enum.BankType.Account then
-        bagIndex = parent:GetBankTabID()
-        slotIndex = parent:GetContainerSlotID()
+    if BankFrame
+        and BankFrame.IsVisible
+        and BankFrame:IsVisible()
+        and BankFrame.GetActiveBankType
+        and Enum
+        and Enum.BankType
+        and BankFrame:GetActiveBankType() == Enum.BankType.Account then
+        if parent.GetBankTabID and parent.GetContainerSlotID then
+            bagIndex = parent:GetBankTabID()
+            slotIndex = parent:GetContainerSlotID()
+        end
     end
 
     return isGuildBank, bagIndex, slotIndex, forceBankScope, hasItemLocation
@@ -365,6 +410,20 @@ end
 -- Overrides standard function for split dialog
 
 local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
+    if type(self) == "number" then
+        stackCount = anchorTo
+        anchorTo = anchor
+        anchor = parent
+        parent = maxStack
+        maxStack = self
+        self = StackSplitFrame
+    end
+
+    if not parent then
+        parent = UIParent
+        anchor = "CENTER"
+        anchorTo = "CENTER"
+    end
 
     ClearDialog()
     dialog = CreateItemSplitterDialog(maxStack)
@@ -395,6 +454,8 @@ local function OpenFrame(self, maxStack, parent, anchor, anchorTo, stackCount)
         local splitValue = dialog:GetValue()
         if self and type(self.split) == "function" then
             self.split(splitValue)
+        elseif StackSplitFrame and type(StackSplitFrame.SplitStack) == "function" then
+            StackSplitFrame:SplitStack(splitValue)
         else
             parent.SplitStack(parent, splitValue) -- original behaviour
         end
@@ -410,7 +471,13 @@ end
 -- Init block
 
 local function Init()
-	StackSplitFrame.OpenStackSplitFrame = OpenFrame
+    if StackSplitFrame and StackSplitFrame.OpenStackSplitFrame then
+        StackSplitFrame.OpenStackSplitFrame = OpenFrame
+    elseif type(OpenStackSplitFrame) == "function" then
+        OpenStackSplitFrame = OpenFrame
+    else
+        ns.Log.warn("Stack split override not available")
+    end
 end
 
 -- Frame update
